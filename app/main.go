@@ -10,6 +10,13 @@ import (
 
 )
 
+type Article struct {
+	Id uint16
+	Title, Anons, FullText string
+}
+
+
+
 func index(w http.ResponseWriter, r *http.Request) {
 	temp, err := template.ParseFiles("template/index.html")
 
@@ -17,7 +24,33 @@ func index(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, err.Error())
 	}
 
-	temp.ExecuteTemplate(w, "index", nil)
+
+	db, err := sql.Open("mysql", "root:root@tcp(127.0.0.1:8889)/go-web-site")
+	if err != nil{
+		panic(err)
+	}
+
+	defer db.Close()
+
+	res, err := db.Query("SELECT * FROM `articles`")
+	if err != nil{
+		panic(err)
+	}
+
+	var posts = []Article{}
+
+	for res.Next() {
+		var post Article
+		err = res.Scan(&post.Id, &post.Title, &post.Anons, &post.FullText)
+		if err != nil{
+			panic(err)
+		}
+		posts = append(posts, post)
+
+	}
+
+
+	temp.ExecuteTemplate(w, "index", posts)
 }
 
 func create(w http.ResponseWriter, r *http.Request) {
